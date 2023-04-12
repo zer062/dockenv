@@ -23,30 +23,69 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
 
-// installCmd represents the install command
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install dockenv services",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("install called")
+		fmt.Println("Installing dockenv services")
+
+		os := runtime.GOOS
+
+		switch os {
+		case "darwin":
+			macosInstallation()
+		default:
+			fmt.Println("OS not supported")
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(installCmd)
+}
 
-	// Here you will define your flags and configuration settings.
+func macosInstallation() {
+	brewIsInstalledCommand := exec.Command("which", "brew")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// installCmd.PersistentFlags().String("foo", "", "A help for foo")
+	if brewIsInstalledError := brewIsInstalledCommand.Run(); brewIsInstalledError != nil {
+		fmt.Println("Homebrew is not installed on this system. Please install it. https://brew.sh")
+		return
+	}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// installCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	dockerIsInstalledCommand := exec.Command("which", "docker")
+
+	if dockerIsInstalledCommandError := dockerIsInstalledCommand.Run(); dockerIsInstalledCommandError != nil {
+		dockerInstallationCommand := exec.Command("brew", "install", "--cask", "docker")
+
+		if dockerInstallationCommandError := dockerInstallationCommand.Run(); dockerInstallationCommandError != nil {
+			fmt.Fprintln(os.Stderr, "One error ha happened when try to install docker:", dockerInstallationCommandError)
+			return
+		}
+	}
+
+	pullNginxProxyImage()
+	saveInitialConfig()
+
+	fmt.Println("dockenv was installed successfully")
+}
+
+func pullNginxProxyImage() {
+	pullNginxImageCommand := exec.Command("docker", "image", "pull", "jwilder/nginx-proxy")
+
+	if pullNginxImageCommandError := pullNginxImageCommand.Run(); pullNginxImageCommandError != nil {
+		fmt.Fprintln(os.Stderr, "One error ha happened when try to install proxy image: ", pullNginxImageCommandError)
+		return
+	}
+}
+
+func saveInitialConfig() {
+	saveConfig("domain", "local")
 }

@@ -22,20 +22,22 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var configFile string
 
 var rootCmd = &cobra.Command{
 	Use:     "dockenv",
 	Short:   "Easy management of Docker development environments",
 	Long:    ``,
 	Version: "0.0.1",
+	Run: func(cmd *cobra.Command, args []string) {
+		cmd.Help()
+	},
 }
 
 func Execute() {
@@ -50,20 +52,24 @@ func init() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
+	home, err := os.UserHomeDir()
+	cobra.CheckErr(err)
 
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".dockenv")
+	configFile := home + "/.dockenv.yaml"
+	_, configFileError := os.Stat(configFile)
+
+	if os.IsNotExist(configFileError) {
+		createConfigFile, createConfigFileError := os.Create(configFile)
+		cobra.CheckErr(createConfigFileError)
+		createConfigFile.Close()
 	}
 
+	viper.SetConfigFile(configFile)
 	viper.AutomaticEnv()
+}
 
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
+func saveConfig(key string, value any) {
+	viper.SetConfigFile(configFile)
+	viper.Set(key, value)
+	viper.WriteConfig()
 }
