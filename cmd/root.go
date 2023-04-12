@@ -25,10 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-var configFile string
 
 var rootCmd = &cobra.Command{
 	Use:     "dockenv",
@@ -48,28 +45,9 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initializeApp)
 }
 
-func initConfig() {
-	home, err := os.UserHomeDir()
-	cobra.CheckErr(err)
-
-	configFile := home + "/.dockenv.yaml"
-	_, configFileError := os.Stat(configFile)
-
-	if os.IsNotExist(configFileError) {
-		createConfigFile, createConfigFileError := os.Create(configFile)
-		cobra.CheckErr(createConfigFileError)
-		createConfigFile.Close()
-	}
-
-	viper.SetConfigFile(configFile)
-	viper.AutomaticEnv()
-}
-
-func saveConfig(key string, value any) {
-	viper.SetConfigFile(configFile)
-	viper.Set(key, value)
-	viper.WriteConfig()
+func initializeApp() {
+	initConfig()
 }
