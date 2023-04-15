@@ -71,8 +71,8 @@ func macosInstallation() {
 		}
 	}
 
+	createDockenvNetwork()
 	pullNginxProxyImage()
-	saveInitialConfig()
 
 	fmt.Println("dockenv was installed successfully")
 }
@@ -86,6 +86,12 @@ func pullNginxProxyImage() {
 	}
 }
 
-func saveInitialConfig() {
-	saveConfig("domain", "local")
+func createDockenvNetwork() {
+	fmt.Println("Creating networks")
+	pullNginxImageCommand := exec.Command("docker", "network", "create", "dockenv-network")
+
+	if pullNginxImageCommandError := pullNginxImageCommand.Run(); pullNginxImageCommandError != nil {
+		fmt.Fprintln(os.Stderr, "One error ha happened when try to create network: ", pullNginxImageCommandError)
+		return
+	}
 }
